@@ -1,0 +1,61 @@
+h1. LTC.wasm
+
+LTC.wasm <b>decodes SMPTE timecodes from an LTC encoded audio signal</b>. 
+
+To synchronize multiple music and video recordings a shared "SMPTE timecode":https://en.wikipedia.org/wiki/SMPTE_timecode signal is often used. For practical purposes the timecode signal is encoded in an audio stream. The timecode can then be recorded in sync with microphone inputs or added to a video recording. The timecode is encoded in audio with "LTC, linear timecode":https://en.wikipedia.org/wiki/Linear_timecode
+
+
+<div align="center">
+!./media/ltc.wasm.apng(Extracting SMPTE data from audio)!
+<small>Fig. Extracting SMPTE data from audio.</small></div>
+
+
+h3(#sync). How does LTC.wasm work?
+
+The first step is to extract, downmix and resample audio from the incoming media file. This is done with a wasm version of "ffmpeg":https://ffmpeg.org/. If a video file with multiple audio streams enters the system, the first audio stream is used for synchronization.
+
+The next step is to extract SMPTE data.
+
+The final step is to show the results. 
+
+h3(#syncsink). How to use LTC.wasm in the browser
+
+To use go to the "LTC.wasm website":https://0110.be/attachment/cors/ltc.wasm/ltc_decoder.html and drag and drop your media files containing SMPTE. Similarly to the screencapture above.
+
+h3(#syncsink). How to build and test LTC.wasm
+
+After installing make, git, emscripten and a c compiler, the following should get you started:
+
+<pre>
+make downloadlibltc
+make web
+</pre>
+
+First the libltc library is downloaded and then the c code is compiled with emscripten. The bridge is a 
+
+To capture stdout at the javascript side, the ltcdec.js file needs to be modified. The first statement should be: 
+
+<pre>
+var Module = typeof Module != "undefined" ? Module : {
+    'print': function(text) {
+        handleStdout(text)
+    }
+};
+</pre>
+
+To test if the bridge is working correctly, the there is also a plain c version. The supplied raw file needs to be a headerless audio file with f32le samples.
+
+<pre>
+#make downloadlibltc
+make plain
+make clean
+/bin/ltc_dec test/test.raw
+</pre>
+
+h2(#credits). Credits
+
+The LTC.wasm software was developed at "IPEM, Ghent University":http://www.ipem.ugent.be/ by Joren Six.
+
+* "libltc":https://github.com/x42/libltc '__libltc provides functionality to encode and decode LTC audio from/to SMPTE or EBU timecode, including SMPTE date support.__' LGPL
+* "ffmpeg":https://ffmpeg.org/ __'A complete, cross-platform solution to record, convert and stream audio and video.'__ The licenses depend on which components are included in your ffmpeg build.
+* "ffmpeg.audio.wasm":https://github.com/JorenSix/ffmpeg.audio.wasm A wasm version of ffmpeg with a focus on audio extraction. The licenses depend on which components are included in your ffmpeg build.

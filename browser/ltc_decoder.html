@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+  
+    <title>SMPTE decoder</title>
+
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+    <meta name="theme-color" content="#7952b3">
+
+    <script type="text/javascript" src="wasm/ffmpeg.audio.core/v5/ffmpeg.core.js"></script>
+
+    <script type="text/javascript" src="js/smpte_example_fragment.js"></script>
+
+    <script type="text/javascript" src="js/ltc.helper.js"></script>
+
+    <script type="text/javascript" src="wasm/ltc.wasm/ltcdec.js"></script>
+
+    <script src="bootstrap/js/bootstrap.bundle.min.js" ></script>
+
+    <script type="text/javascript" src="js/ffmpeg.helper.js"></script>
+    
+    <script type="text/javascript" src="js/ltc.ui.js"></script>
+    
+
+    <style type="text/css">
+        #drop_zone{
+          box-sizing: border-box;
+          display: none;
+          position: fixed;
+          width: 100%;
+          height: 100%;
+          left: 0;
+          top: 0;
+          z-index: 99999;
+          background: rgba(0,0,94,.2);
+          box-shadow: 32px 23px 131px -1px rgba(0,0,0,0.75) inset;
+          justify-content: center;
+          align-items: center;
+      }
+
+      body{
+        padding: 0.5rem;
+      }
+      fieldset{
+        margin-bottom: 0.5rem ;
+      }
+
+      .result{
+        display: none;
+      }
+
+      tbody > tr:last-child > td {
+      border-bottom: 0;
+      }
+    </style>
+
+  </head>
+  <body>
+
+    <div id="drop_zone" class="text-muted">
+      <svg xmlns="http://www.w3.org/2000/svg" style="width: 20vh;height: 20vh"   fill="rgb(108, 117, 125)" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+      </svg>
+    </div> 
+
+    <h1 class="h2">Extract SMPTE from media files</h1>
+
+
+     <fieldset class="border p-2">
+      <legend class="w-auto float-none small text-muted">1. Select audio channel</legend>
+       <div style="display:grid;grid-template-columns: 4fr 1fr 4fr;grid-gap: 1.0rem;">
+       
+        <span style="text-align: right;"> Select SMPTE audio channel: </span>
+       <select style="height: 1.5rem" id="audio_channel">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+          </select> 
+          <span class="text-muted">
+            By default the first channel (channel 0) of the first audio stream is used.
+          </span>
+      
+      </div>
+
+    </fieldset>
+
+
+    <fieldset class="border p-2">
+      <legend class="w-auto float-none small text-muted">2. Select media file(s)</legend>      
+        <input type="file" id="uploader" multiple="true" hidden>
+
+        <div style="display: grid; grid-template-columns: 1fr;grid-gap: 0.7rem;min-width: 150px;text-align: center; "  >
+        <button type="button" id="uploader_button" class="btn btn-lg btn-primary">Select audio files</button>
+        <span class="text-muted">
+        ... or drop your audio files
+        </span>
+
+
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="rgb(108, 117, 125)"  style="margin: auto" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+    </fieldset>
+
+    <fieldset class="border p-2 result">
+      <legend class="w-auto float-none small text-muted">3. verify output</legend>
+        <div class="progress" style="height: 20px;visibility: hidden;margin-bottom: 5px;" id="progress_container">
+           <div class="progress-bar progress-bar-striped" id="progress_bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+
+        <input type="file" id="uploader" multiple="true" hidden>
+
+        <textarea id="smpte_output" style="width:100%" rows="5"></textarea>
+    </fieldset>
+
+
+
+    <fieldset class="border p-2 result">
+        <legend class="w-auto float-none small text-muted">3. download results</legend>
+
+        <div style="display:grid;grid-gap: 1rem; grid-template-columns: 1fr 1fr 1fr;">
+          <button type="button" class="btn btn-primary" onclick="downloadInfo(0);">Download CSV</button>
+          <button type="button" class="btn btn-primary" onclick="reset();">Clear</button>
+        </div>
+    </fieldset>
+
+    <br><br> 
+
+    <h2>More information</h2>
+
+    <dt>What is this for?</dt>
+    <dd>
+      <p>To synchronize multiple music and video recordings a shared <a href="https://en.wikipedia.org/wiki/SMPTE_timecode">SMPTE timecode</a> signal is often used. For practical purposes the timecode signal is encoded in an audio stream. The timecode can then be recorded in sync with microphone inputs or added to a video recording. The timecode is encoded in audio with <a href="https://en.wikipedia.org/wiki/Linear_timecode">LTC, linear timecode</a>. 
+      </p>
+      <p>
+      This web app <b>decodes SMPTE timecodes from an LTC encoded audio signal</b>. 
+      </p>
+    </dd>
+
+    <dt>How does it work?</dt>
+    <dd>
+      First the audio is extracted from the media file using <a href="https://github.com/JorenSix/ffmpeg.audio.wasm">a web version of ffmpeg</a>. This means that almost any audio format and multi-media container is supported.
+      Secondly, the decoding is done by a library called <a href="https://github.com/x42/libltc">libltc</a>. Both ffmpeg and libltc are compiled to WebAssembly which allows to run them in the browser. And finally, to present and download decoded information, there is a bit of javascript glue code which holds the html interface and WebAssembly software together. 
+    </dd>
+
+    <dt>Is it fast?</dt>
+    <dd>
+      One of the advantages of WebAssembly is that processed files do not need to be uploaded to a server. Everything happens locally. WebAssembly is reasonably fast, see here for a <a href="https://www.usenix.org/conference/atc19/presentation/jangda">discussion on the Performance of WebAssembly vs. Native Code</a>. Keeping files localy also has advantages regarding privacy: files never leave the client and can not be copied at the server side. Most of the time is spent decoding audio.  
+    </dd>
+    <br>
+  </body>
+</html>

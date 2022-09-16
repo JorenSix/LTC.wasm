@@ -1,0 +1,14 @@
+This directory contains two test files
+
+The wav file is generated with the "ltcgen" program of ltctools:
+
+https://github.com/x42/ltc-tools
+
+Generates a wav file of a duration of 5 seconds and 10 frames at 30 frames per second:
+
+ltcgen -l 5:10 -f 30 test.wav
+
+To convert the wav file to a list of floats, which are easy to use in e.g. javascript or c convert
+the file to a headerless raw file with:
+
+ffmpeg -hide_banner -y -loglevel panic  -i test.wav -ac 1 -f f32le -acodec pcm_f32le test.raw
